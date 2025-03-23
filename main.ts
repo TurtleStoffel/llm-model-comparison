@@ -1,6 +1,8 @@
 import { parse } from "jsr:@std/yaml"
 
-const experiment = await Deno.readTextFile("./experiments/rewrite-bullet-points-to-text.yaml")
+const experimentName = "rewrite-bullet-points-to-text"
+
+const experiment = await Deno.readTextFile(`./experiments/${experimentName}.yaml`)
 
 interface Experiment {
   models: string[]
@@ -10,8 +12,9 @@ interface Experiment {
 
 const parsedExperiment = parse(experiment) as Experiment
 
+const experimentStartTimestamp = Temporal.Now.instant().epochMilliseconds
 parsedExperiment.models.forEach(async model => {
-  let resp = await fetch("http://localhost:11434/api/generate", {
+  const response = await fetch("http://localhost:11434/api/generate", {
     method: "POST",
     body: JSON.stringify({ 
       model,
@@ -20,12 +23,15 @@ parsedExperiment.models.forEach(async model => {
     }),
   });
 
-  console.log(resp.status); // 200
-  console.log(resp.headers.get("Content-Type")); // "text/html"
-  const content = await resp.text();
+  console.log(response.status);
+  console.log(response.headers.get("Content-Type")); 
+  const content = await response.text();
   console.log(content); // "Hello, World!"
 
   const parsedContent = JSON.parse(content)
 
-  await Deno.writeTextFile(`./output/test-${model}.txt`, parsedContent.response, { encoding: "utf8" });
+  const outputFolder = `./output/${experimentName}-${experimentStartTimestamp}`
+  Deno.mkdir(outputFolder, { recursive: true });
+
+  await Deno.writeTextFile(`${outputFolder}/${model}.txt`, parsedContent.response);
 })
