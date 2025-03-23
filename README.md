@@ -10,7 +10,7 @@ deno task start
 ## Experiments
 Experiments are defined in the `experiments` folder. Each experiment is a YAML file with the following fields:
 - `models`: List of models to compare
-- `stylePrompt`: Prompt to specify the style used by the LLM to generate text
+- `stylePrompts`: A list of prompts to specify the style used by the LLM to generate text
 - `llmPrompt`: Prompt to specify the text to generate
 
 Each experiment should have a unique name that represents what the experiment is about.
@@ -21,15 +21,32 @@ models:
 - deepseek-r1
 - gemma3:12b
 - llama3.2
-stylePrompt: |
-  Use clear, direct language and avoid complex terminology.
-  Aim for a Flesch reading score of 80 or higher.
-  Use the active voice.
-  Avoid adverbs.
-  Avoid buzzwords and instead use plain English.
-  Use jargon where relevant.
-  Avoid being salesy or overly enthusiastic and instead express calm confidence.
-  Prefer full sentences over bullet points unless explicitly requested.
+- mistral
+- phi4
+stylePrompts: 
+- name: original
+  prompt: |
+    Use clear, direct language and avoid complex terminology.
+    Aim for a Flesch reading score of 80 or higher.
+    Use the active voice.
+    Avoid adverbs.
+    Avoid buzzwords and instead use plain English.
+    Use jargon where relevant.
+    Avoid being salesy or overly enthusiastic and instead express calm confidence.
+    Prefer full sentences over bullet points unless explicitly requested.
+- name: avoid-we-and-dashes
+  prompt: |
+    Use clear, direct language and avoid complex terminology.
+    Aim for a Flesch reading score of 80 or higher.
+    Use the active voice.
+    Avoid adverbs.
+    Avoid buzzwords and instead use plain English.
+    Use jargon where relevant.
+    Avoid being salesy or overly enthusiastic and instead express calm confidence.
+    Prefer full sentences over bullet points unless explicitly requested.
+    Avoid overusing "we".
+    Don't use dashes or semicolons.
+
 llmPrompt: |
   The context is a software system that uses available data to determine the code quality of a codebase.
   Rewrite the following section into paragraphs without bullet points that could be used in an article about the topic.
