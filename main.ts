@@ -1,8 +1,11 @@
 import { parse } from "jsr:@std/yaml"
 
 const experimentName = "rewrite-bullet-points-to-text"
-
 const experiment = await Deno.readTextFile(`./experiments/${experimentName}.yaml`)
+const experimentStartTimestamp = Temporal.Now.instant().epochMilliseconds
+
+const outputFolder = `./output/${experimentName}-${experimentStartTimestamp}`
+Deno.mkdir(outputFolder, { recursive: true });
 
 interface StylePrompt {
   name: string
@@ -17,9 +20,8 @@ interface Experiment {
 
 const parsedExperiment = parse(experiment) as Experiment
 
-const experimentStartTimestamp = Temporal.Now.instant().epochMilliseconds
-const responsePromises = parsedExperiment.models.flatMap(model => {
-  return parsedExperiment.stylePrompts.map(async stylePrompt => {
+parsedExperiment.models.forEach(model => {
+  parsedExperiment.stylePrompts.forEach(async stylePrompt => {
     const response = await fetch("http://localhost:11434/api/generate", {
       method: "POST",
       body: JSON.stringify({ 
@@ -36,27 +38,12 @@ const responsePromises = parsedExperiment.models.flatMap(model => {
 
     const parsedContent = JSON.parse(content)
 
-    return {
-      model,
-      stylePromptName: stylePrompt.name,
-      response: parsedContent.response
-    }
+    // Write model-specific output file
+    const filename = `${model}-${stylePrompt.name}.txt`
+    await Deno.writeTextFile(`${outputFolder}/${filename}`, parsedContent.response);
+
+    // Append aggregated Markdown file
+    const markdownResult = `## ${model} - ${stylePrompt.name}\n${parsedContent.response}\n`
+    await Deno.writeTextFile(`${outputFolder}/${experimentName}.md`, markdownResult, { append: true })
   })
 })
-
-const responses = await Promise.all(responsePromises)
-
-const outputFolder = `./output/${experimentName}-${experimentStartTimestamp}`
-Deno.mkdir(outputFolder, { recursive: true });
-
-responses.forEach(async response => {
-    const filename = `${response.model}-${response.stylePromptName}.txt`
-
-    await Deno.writeTextFile(`${outputFolder}/${filename}`, response.response);
-})
-
-const markdownResult = responses.map(response => {
-  return `## ${response.model} - ${response.stylePromptName}\n${response.response}`
-})
-
-await Deno.writeTextFile(`${outputFolder}/${experimentName}.md`, markdownResult.join("\n\n"))
