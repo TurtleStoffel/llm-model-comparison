@@ -45,5 +45,5 @@ models.forEach(async model => {
 
   const parsedContent = JSON.parse(content)
 
-  await Deno.writeTextFile(`./test.txt`, parsedContent.response, { encoding: "utf8" });
+  await Deno.writeTextFile(`./output/test.txt`, parsedContent.response, { encoding: "utf8" });
 })
