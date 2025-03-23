@@ -18,8 +18,8 @@ interface Experiment {
 const parsedExperiment = parse(experiment) as Experiment
 
 const experimentStartTimestamp = Temporal.Now.instant().epochMilliseconds
-parsedExperiment.models.forEach(async model => {
-  parsedExperiment.stylePrompts.forEach(async stylePrompt => {
+const responsePromises = parsedExperiment.models.flatMap(model => {
+  return parsedExperiment.stylePrompts.map(async stylePrompt => {
     const response = await fetch("http://localhost:11434/api/generate", {
       method: "POST",
       body: JSON.stringify({ 
@@ -36,11 +36,27 @@ parsedExperiment.models.forEach(async model => {
 
     const parsedContent = JSON.parse(content)
 
-    const outputFolder = `./output/${experimentName}-${experimentStartTimestamp}`
-    Deno.mkdir(outputFolder, { recursive: true });
-
-    const filename = `${model}-${stylePrompt.name}.txt`
-
-    await Deno.writeTextFile(`${outputFolder}/${filename}`, parsedContent.response);
+    return {
+      model,
+      stylePromptName: stylePrompt.name,
+      response: parsedContent.response
+    }
   })
 })
+
+const responses = await Promise.all(responsePromises)
+
+const outputFolder = `./output/${experimentName}-${experimentStartTimestamp}`
+Deno.mkdir(outputFolder, { recursive: true });
+
+responses.forEach(async response => {
+    const filename = `${response.model}-${response.stylePromptName}.txt`
+
+    await Deno.writeTextFile(`${outputFolder}/${filename}`, response.response);
+})
+
+const markdownResult = responses.map(response => {
+  return `## ${response.model} - ${response.stylePromptName}\n${response.response}`
+})
+
+await Deno.writeTextFile(`${outputFolder}/${experimentName}.md`, markdownResult.join("\n\n"))
