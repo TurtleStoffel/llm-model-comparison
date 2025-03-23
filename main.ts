@@ -33,7 +33,7 @@ models.forEach(async model => {
     method: "POST",
     body: JSON.stringify({ 
       model,
-      prompt: llmPrompt,
+      prompt: stylePrompt + llmPrompt,
       stream: false,
     }),
   });
